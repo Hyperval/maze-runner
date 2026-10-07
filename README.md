@@ -41,6 +41,14 @@ pip install -r requirements.txt
 python main.py
 ```
 
+**If you get `ModuleNotFoundError: No module named 'pygame'`** you have more
+than one Python installed and the one on your PATH isn't the one pip installed
+into. On Windows, use the launcher instead — it picks the right one:
+
+```bash
+py main.py
+```
+
 Run the tests (headless, no window opens):
 
 ```bash

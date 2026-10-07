@@ -29,17 +29,20 @@ import sys
 import pygame
 
 import maze
-from entities import Coin, Enemy, Player
+from entities import Coin, Enemy, PredictiveEnemy, Player
 from pathfinding import ALGORITHMS, flood_distances
 from settings import (
     BRAID_CHANCE, C_ACCENT, C_BG, C_COIN, C_ENEMY, C_ENEMY_2, C_EXIT,
-    C_EXIT_LOCKED, C_FLOOR, C_LOSE, C_PATH, C_PATH_2, C_PLAYER, C_TEXT,
-    C_TEXT_DIM, C_VISITED, C_VISITED_2, C_WALL, C_WIN, CELL_SIZE, COINS_BASE,
+    C_AIM, C_ENEMY_P, C_EXIT_LOCKED, C_FLOOR, C_LOSE, C_PATH, C_PATH_2,
+    C_PATH_P, C_PLAYER, C_TEXT,
+    C_TEXT_DIM, C_VISITED, C_VISITED_2, C_VISITED_P, C_WALL, C_WIN, CELL_SIZE,
+    COINS_BASE,
     COIN_BAND_HI, COIN_BAND_LO, COINS_ENABLED, COINS_MAX, COINS_PER_LEVEL,
     COLS, ENEMY_HEAD_START_MS, ENEMY_MIN_DELAY,
     ENEMY_MOVE_DELAY, ENEMY_REPATH_INTERVAL, ENEMY_SPEEDUP_PER_LEVEL, FPS,
     HEIGHT, HUD_HEIGHT, MAX_COLS, MAX_ROWS, MAZE_GROWTH_PER_LEVEL,
-    PLAYER_MOVE_DELAY, ROWS, SECOND_ENEMY_DELAY_FACTOR, SECOND_ENEMY_ENABLED,
+    PLAYER_MOVE_DELAY, PREDICT_LOOKAHEAD, PREDICTIVE_DELAY_FACTOR,
+    PREDICTIVE_FROM_LEVEL, ROWS, SECOND_ENEMY_DELAY_FACTOR, SECOND_ENEMY_ENABLED,
     SECOND_ENEMY_FROM_LEVEL,
     WIDTH,
 )
@@ -169,20 +172,41 @@ class Game:
         # The second enemy runs the OTHER algorithm, so the two can be compared
         # live. It also needs to start away from the first enemy, or they walk
         # in lockstep and the comparison is invisible.
+        # The second enemy. From PREDICTIVE_FROM_LEVEL it is REPLACED by the
+        # predictive one rather than joined by it: keeping the threat count at
+        # two makes the progression "the second enemy gets smarter" instead of
+        # "more enemies", which is both more interesting and far more
+        # survivable. As a third enemy, autoplay measured levels 6-10 falling
+        # to 6-14% win rate.
         if SECOND_ENEMY_ENABLED and self.level >= SECOND_ENEMY_FROM_LEVEL:
             other = self._other_algorithm(self.algorithm)
             from_first = flood_distances(self.grid, first_cell)
-
             second_cell = max(
                 cells,
                 key=lambda c: min(score(c), from_first.get(c, 0)),
             )
-            enemies.append(
-                Enemy(second_cell, int(delay * SECOND_ENEMY_DELAY_FACTOR),
-                      other, ENEMY_REPATH_INTERVAL,
-                      colour=C_ENEMY_2, path_colour=C_PATH_2,
-                      visited_colour=C_VISITED_2)
-            )
+
+            predictive = (PREDICTIVE_FROM_LEVEL
+                          and self.level >= PREDICTIVE_FROM_LEVEL)
+
+            if predictive:
+                enemies.append(
+                    PredictiveEnemy(
+                        second_cell, int(delay * PREDICTIVE_DELAY_FACTOR),
+                        other, ENEMY_REPATH_INTERVAL,
+                        colour=C_ENEMY_P, path_colour=C_PATH_P,
+                        visited_colour=C_VISITED_P,
+                        lookahead=PREDICT_LOOKAHEAD,
+                        player_delay=PLAYER_MOVE_DELAY,
+                    )
+                )
+            else:
+                enemies.append(
+                    Enemy(second_cell, int(delay * SECOND_ENEMY_DELAY_FACTOR),
+                          other, ENEMY_REPATH_INTERVAL,
+                          colour=C_ENEMY_2, path_colour=C_PATH_2,
+                          visited_colour=C_VISITED_2)
+                )
         return enemies
 
     @staticmethod
@@ -347,7 +371,12 @@ class Game:
         # under pressure before they can even see where the coins are.
         if self.elapsed * 1000 >= ENEMY_HEAD_START_MS:
             for enemy in self.enemies:
-                enemy.update(self.grid, self.player.cell, now)
+                if isinstance(enemy, PredictiveEnemy):
+                    # Only this one needs to know which way we are moving.
+                    enemy.update(self.grid, self.player.cell, now,
+                                 self.player.heading)
+                else:
+                    enemy.update(self.grid, self.player.cell, now)
 
         # Any enemy on the player's cell ends the run.
         if any(e.caught(self.player.cell) for e in self.enemies):
@@ -375,6 +404,7 @@ class Game:
             if self.show_search:
                 self.draw_search()
             self.draw_coins()
+            self.draw_aim()
             self.draw_entities()
             self.draw_hud()
             if self.state in (WON, LOST):
@@ -465,6 +495,21 @@ class Game:
 
         self.screen.blit(self.overlay, (0, HUD_HEIGHT))
 
+    def draw_aim(self):
+        """Mark where the predictive enemy is trying to cut the player off.
+
+        Without this the behaviour is invisible - it just looks like an enemy
+        taking a strange route. The marker is what makes 'it is going to where
+        you will be' legible to someone watching.
+        """
+        for enemy in self.enemies:
+            if not isinstance(enemy, PredictiveEnemy):
+                continue
+            if not enemy.intercepting or enemy.aim_cell is None:
+                continue
+            rect = self.cell_rect(enemy.aim_cell, 5)
+            pygame.draw.rect(self.screen, C_AIM, rect, 3, border_radius=4)
+
     def draw_coins(self):
         for coin in self.coins:
             rect = self.cell_rect(coin.cell, 8)
@@ -493,9 +538,12 @@ class Game:
 
         # Showing each enemy's expanded-cell count turns the BFS-vs-A*
         # difference into numbers the judges can watch change live.
-        parts = [
-            f"{e.algorithm}: {e.last_search_size} cells" for e in self.enemies
-        ]
+        parts = []
+        for e in self.enemies:
+            label = e.algorithm
+            if isinstance(e, PredictiveEnemy):
+                label = "PREDICT" if e.intercepting else "predict(trailing)"
+            parts.append(f"{label}: {e.last_search_size} cells")
         right = self.font_small.render("   |   ".join(parts), True, C_TEXT_DIM)
         self.screen.blit(right, (12, 32))
 
