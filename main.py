@@ -25,6 +25,7 @@ when this file is executed directly, not when another file imports it". That's
 why the test files can `from main import Game` without launching a window.
 """
 
+import argparse
 import sys
 
 import pygame
@@ -59,7 +60,16 @@ MENU, PLAYING, PAUSED, WON, LOST = "menu", "playing", "paused", "won", "lost"
 
 
 class Game:
-    def __init__(self, start_in_menu=True):
+    def __init__(self, start_in_menu=True, algorithm="BFS", auto_swap=0):
+        """`algorithm` is which search enemy 1 starts on.
+
+        `auto_swap`, in seconds, makes the game alternate BFS and A* on its own.
+        That exists so the comparison can be shown with no keyboard at all --
+        useful when the window does not have focus, and as a hands-free demo.
+        """
+        self._start_algorithm = algorithm
+        self.auto_swap = auto_swap
+        self._last_swap = 0
         pygame.init()
         pygame.display.set_caption("Maze Runner -- AI Enemy")
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -73,7 +83,7 @@ class Game:
         # Surface used for translucent overlays (paths + visited cells).
         self.overlay = pygame.Surface((WIDTH, HEIGHT - HUD_HEIGHT), pygame.SRCALPHA)
 
-        self.algorithm = "BFS"
+        self.algorithm = algorithm if algorithm in ALGORITHMS else "BFS"
         self.show_search = True
         self.level = 1
         self.best_times = {}        # level number -> fastest time in seconds
@@ -336,6 +346,12 @@ class Game:
         now = pygame.time.get_ticks()
         self.elapsed = (now - self.start_time - self.paused_total) / 1000.0
 
+        # Hands-free algorithm swapping, for showing the comparison without
+        # needing the window to have keyboard focus.
+        if self.auto_swap and now - self._last_swap >= self.auto_swap * 1000:
+            self._last_swap = now
+            self.cycle_algorithm()
+
         # Read held keys so movement repeats smoothly while a key is down.
         keys = pygame.key.get_pressed()
         direction = (0, 0)
@@ -519,10 +535,13 @@ class Game:
         right = self.font.render("   |   ".join(parts), True, C_ACCENT)
         self.screen.blit(right, (12, 30))
 
-        hint = self.font_small.render(
-            "1 BFS   2 A*   TAB swap   V overlay   P pause   R restart   M menu",
-            True, C_TEXT_DIM,
+        hint_text = (
+            f"AUTO-SWAPPING every {self.auto_swap}s   -   no keyboard needed"
+            if self.auto_swap else
+            "1 BFS   2 A*   TAB swap   V overlay   P pause   R restart   M menu"
         )
+        hint = self.font_small.render(hint_text, True,
+                                      C_WIN if self.auto_swap else C_TEXT_DIM)
         self.screen.blit(hint, (WIDTH - hint.get_width() - 12, 32))
 
     def draw_pause(self):
@@ -567,5 +586,28 @@ class Game:
         sys.exit(0)
 
 
+def parse_args(argv=None):
+    ap = argparse.ArgumentParser(description="Maze Runner with AI-controlled enemy")
+    ap.add_argument("--algo", choices=["BFS", "A*"], default="BFS",
+                    help="which search the first enemy starts on (default: BFS)")
+    ap.add_argument("--auto-swap", type=float, default=0, metavar="SECONDS",
+                    help="alternate BFS and A* automatically every SECONDS, "
+                         "so the comparison needs no keypresses")
+    ap.add_argument("--level", type=int, default=1,
+                    help="start on this level (4+ has two enemies at once)")
+    ap.add_argument("--no-menu", action="store_true",
+                    help="skip the title screen and start playing")
+    return ap.parse_args(argv)
+
+
 if __name__ == "__main__":
-    Game().run()
+    args = parse_args()
+    game = Game(start_in_menu=not args.no_menu,
+                algorithm=args.algo,
+                auto_swap=args.auto_swap)
+    if args.level > 1:
+        game.level = args.level
+        game.new_level()
+        if not args.no_menu:
+            game.state = MENU
+    game.run()

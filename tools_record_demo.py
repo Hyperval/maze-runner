@@ -41,7 +41,6 @@ C_CAP_BG = (10, 10, 16)
 C_CAP = (240, 240, 248)
 C_CAP_DIM = (150, 150, 170)
 
-
 class Recorder:
     """Pipes raw frames into ffmpeg, so nothing touches the disk in between."""
 
@@ -70,11 +69,9 @@ class Recorder:
         self.proc.stdin.close()
         return self.proc.wait()
 
-
 def make_canvas():
     """A surface the size of the game plus a caption strip underneath."""
     return pygame.Surface((WIDTH, HEIGHT + CAPTION_H))
-
 
 def compose(canvas, game_surface, fonts, title, sub):
     canvas.fill(C_CAP_BG)
@@ -93,7 +90,6 @@ def compose(canvas, game_surface, fonts, title, sub):
             surf = fonts[1].render(sub.rstrip() + "...", True, C_CAP_DIM)
         canvas.blit(surf, (26, HEIGHT + 44))
     return canvas
-
 
 def main():
     game = Game(start_in_menu=False)
@@ -151,7 +147,7 @@ def main():
     game.state = MENU
     print("  title screen")
     hold(3.0, "Maze Runner — AI-Controlled Enemy",
-         "Problem Statement 15 - REVA University - Hackathon Abhinava")
+         "Problem Statement 15 - REVA University - ")
 
     # 2. Level 1 — the basic idea
     print("  level 1  (the basic chase)")
@@ -190,7 +186,6 @@ def main():
     size = os.path.getsize(OUT) / (1024 * 1024)
     print(f"\nWrote {OUT}  ({size:.1f} MB)")
     return 0
-
 
 if __name__ == "__main__":
     sys.exit(main())

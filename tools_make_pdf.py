@@ -91,7 +91,6 @@ strong { color: #15151d; }
 .chapter > h1 { margin-top: 0; }
 """
 
-
 def find_chrome():
     for path in CHROME_CANDIDATES:
         if os.path.exists(path):
@@ -102,7 +101,6 @@ def find_chrome():
             return found
     return None
 
-
 def demote_headings(html):
     """Push every heading down one level so each file's H1 nests under its
     chapter title. Done on the rendered HTML so fenced code is untouched."""
@@ -110,7 +108,6 @@ def demote_headings(html):
         html = html.replace(f"<h{level}>", f"<h{level + 1}>")
         html = html.replace(f"</h{level}>", f"</h{level + 1}>")
     return html
-
 
 def build_html():
     md = markdown.Markdown(extensions=["tables", "fenced_code", "toc", "sane_lists"])
@@ -154,7 +151,7 @@ def build_html():
   <div class="meta">
     Problem Statement 15<br>
     REVA University · B25CS0311 Portfolio Building<br>
-    Hackathon अभिनव (Abhinava) · 07/10/2026<br><br>
+    07/10/2026<br><br>
     github.com/Hyperval/maze-runner
   </div>
 </div>
@@ -177,7 +174,6 @@ def build_html():
         fh.write(html)
     return len(chapters)
 
-
 def to_pdf(chrome):
     out_abs = os.path.abspath(OUT_PDF)
     src_abs = os.path.abspath(OUT_HTML).replace("\\", "/")
@@ -195,7 +191,6 @@ def to_pdf(chrome):
     )
     return out_abs
 
-
 def main():
     count = build_html()
     print(f"Built HTML from {count} documents.")
@@ -211,7 +206,6 @@ def main():
     print(f"PDF written to {OUT_PDF}  ({size_kb:.0f} KB)")
     os.remove(OUT_HTML)
     return 0
-
 
 if __name__ == "__main__":
     sys.exit(main())

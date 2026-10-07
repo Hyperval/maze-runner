@@ -1,6 +1,6 @@
 # Maze Runner with AI-Controlled Enemy
 
-**REVA University — B25CS0311 Portfolio Building — Hackathon अभिनव (Abhinava)**
+**REVA University — B25CS0311 Portfolio Building**
 Problem Statement #15 · 07/10/2026
 
 ---

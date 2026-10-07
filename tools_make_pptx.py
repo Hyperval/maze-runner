@@ -43,7 +43,6 @@ MONO = "Consolas"
 W, H = Inches(13.333), Inches(7.5)       # 16:9
 MARGIN = Inches(0.85)
 
-
 def blank(prs, bg):
     """Add a slide with no placeholders and a solid background."""
     slide = prs.slides.add_slide(prs.slide_layouts[6])
@@ -52,14 +51,12 @@ def blank(prs, bg):
     fill.fore_color.rgb = bg
     return slide
 
-
 def textbox(slide, x, y, w, h):
     box = slide.shapes.add_textbox(x, y, w, h)
     tf = box.text_frame
     tf.word_wrap = True
     tf.margin_left = tf.margin_right = tf.margin_top = tf.margin_bottom = 0
     return tf
-
 
 def para(tf, text, size, colour, *, bold=False, font=SANS, space_after=0,
          first=False, align=None, line=None):
@@ -77,7 +74,6 @@ def para(tf, text, size, colour, *, bold=False, font=SANS, space_after=0,
         p.line_spacing = line
     return p
 
-
 def card(slide, x, y, w, h, *, fill=CARD, edge=CARD_EDGE, edge_w=1.0):
     from pptx.enum.shapes import MSO_SHAPE
     shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, x, y, w, h)
@@ -91,17 +87,14 @@ def card(slide, x, y, w, h, *, fill=CARD, edge=CARD_EDGE, edge_w=1.0):
     shape.text_frame.text = ""
     return shape
 
-
 def notes(slide, text):
     slide.notes_slide.notes_text_frame.text = text
-
 
 def heading(slide, title, subtitle=None):
     tf = textbox(slide, MARGIN, Inches(0.62), W - MARGIN * 2, Inches(1.5))
     para(tf, title, 38, PAPER, bold=True, first=True, space_after=7)
     if subtitle:
         para(tf, subtitle, 16, MUTED, line=1.3)
-
 
 # --------------------------------------------------------------------------
 
@@ -130,15 +123,14 @@ def slide_cover(prs):
             para(tf, line, 13.5, PAPER, line=1.3)
 
     tf = textbox(s, MARGIN, H - Inches(0.75), W - MARGIN * 2, Inches(0.4))
-    para(tf, "REVA University  ·  B25CS0311 Portfolio Building  ·  "
-             "Hackathon Abhinava  ·  07/10/2026", 11, DIM, font=MONO, first=True)
+    para(tf, "REVA University  ·  B25CS0311 Portfolio Building  ·  07/10/2026",
+         11, DIM, font=MONO, first=True)
 
     notes(s, "AKHIL — 20 seconds. Open here. 'Good morning. We're presenting "
              "problem statement 15 - a maze game where the enemy chases the "
              "player using pathfinding. I'm Akhil, and this is Akshay, Abdullah "
              "and Christen.' Then hand to Akshay. Do NOT read the three cards "
              "out; the examiners can see them. The demo is where the marks are.")
-
 
 def slide_solution(prs):
     s = blank(prs, INK)
@@ -187,56 +179,71 @@ def slide_solution(prs):
              "O(log n) versus deque at O(1); at our maze size the per-cell "
              "overhead outweighs the cells saved. Christen's slide has the data.")
 
-
 def slide_stack(prs):
     s = blank(prs, INK_SOFT)
-    heading(s, "How it fits together",
-            "Five modules for the game, two standalone tools that measure it. "
-            "No dataset, no network, no hardware.")
+    heading(s, "Building the maze",
+            "A recursive backtracker carves it at runtime — depth-first search "
+            "used to dig instead of to search.")
 
-    top = [
-        ("pathfinding.py", "BFS, A*, flood-fill distance maps. The technical core."),
-        ("maze.py", "Recursive-backtracker carving, braiding for escape routes."),
-        ("entities.py", "Player, Enemy, Coin. Each enemy holds its own algorithm."),
-        ("main.py", "Game loop, state machine, rendering, the search overlay."),
-    ]
-    bottom = [
-        ("benchmark.py", "Runs BFS against A* over 50 generated mazes and charts it."),
-        ("autoplay.py", "Plays the game headlessly hundreds of times, hunting crashes."),
-        ("test_pathfinding.py", "226 headless checks, including a fuzz test. All passing."),
-    ]
+    img = "assets/demo_carving.png"
+    if os.path.exists(img):
+        s.shapes.add_picture(img, MARGIN, Inches(2.1), width=Inches(6.3))
 
-    gap = Inches(0.22)
-    cw = (W - MARGIN * 2 - gap * 3) / 4
-    for i, (name, desc) in enumerate(top):
-        x = MARGIN + i * (cw + gap)
-        card(s, x, Inches(2.5), cw, Inches(1.65))
-        tf = textbox(s, x + Inches(0.26), Inches(2.72), cw - Inches(0.52), Inches(1.3))
-        para(tf, name, 12.5, CYAN, font=MONO, first=True, space_after=7)
-        para(tf, desc, 12, BODY, line=1.3)
-
-    cw3 = (W - MARGIN * 2 - gap * 2) / 3
-    for i, (name, desc) in enumerate(bottom):
-        x = MARGIN + i * (cw3 + gap)
-        sh = card(s, x, Inches(4.45), cw3, Inches(1.7))
-        bar = s.shapes.add_shape(1, x, Inches(4.45), cw3, Inches(0.05))
+    x = MARGIN + Inches(6.7)
+    cw = W - x - MARGIN
+    for i, (title, colour, text) in enumerate([
+        ("Carve two cells at a time", CYAN,
+         "Pick a random neighbour TWO cells away and knock out the wall "
+         "between. Dead end? Pop the stack and back up. Two cells keeps walls "
+         "on even coordinates and one cell thick — one at a time dissolves the "
+         "grid into an open room."),
+        ("Then braid it open", GREEN,
+         "A finished maze is perfect — one route between any two cells, so it "
+         "is nothing but dead ends and the player gets cornered. We reopen 35% "
+         "into loops. That also widened A*'s lead from 11% to 26%."),
+    ]):
+        y = Inches(2.1) + i * Inches(1.95)
+        card(s, x, y, cw, Inches(1.75))
+        bar = s.shapes.add_shape(1, x, y, Inches(0.055), Inches(1.75))
         bar.fill.solid()
-        bar.fill.fore_color.rgb = GREEN
+        bar.fill.fore_color.rgb = colour
         bar.line.fill.background()
         bar.shadow.inherit = False
-        tf = textbox(s, x + Inches(0.26), Inches(4.72), cw3 - Inches(0.52), Inches(1.3))
-        para(tf, name, 12.5, GREEN, font=MONO, first=True, space_after=7)
-        para(tf, desc, 12, BODY, line=1.3)
+        tf = textbox(s, x + Inches(0.28), y + Inches(0.2), cw - Inches(0.56), Inches(1.4))
+        para(tf, title, 15, colour, bold=True, first=True, space_after=5)
+        para(tf, text, 11.5, BODY, line=1.25)
 
-    tf = textbox(s, MARGIN, H - Inches(0.75), W - MARGIN * 2, Inches(0.4))
-    para(tf, "github.com/Hyperval/maze-runner", 11, DIM, font=MONO, first=True)
+    strip = [
+        ("STACK", MUTED, "Python 3 · pygame-ce · matplotlib"),
+        ("ALGORITHMS", MUTED, "BFS · A* · flood fill · backtracker"),
+        ("OUR TOOLING", GREEN, "benchmark · autoplay · 226 tests"),
+    ]
+    gap = Inches(0.2)
+    cwx = (W - MARGIN * 2 - gap * 2) / 3
+    for i, (label, lc, text) in enumerate(strip):
+        bx = MARGIN + i * (cwx + gap)
+        card(s, bx, Inches(6.05), cwx, Inches(0.78))
+        tf = textbox(s, bx + Inches(0.24), Inches(6.17), cwx - Inches(0.48), Inches(0.6))
+        para(tf, label, 10.5, lc, font=MONO, first=True, space_after=2)
+        para(tf, text, 12, PAPER)
 
-    notes(s, "ABDULLAH — 30 seconds, keep it short. Do NOT read all seven boxes. "
-             "Land one point: the bottom row is tooling we wrote to check our own "
-             "work, not game features. 'We didn't just build it, we built the "
-             "things that tell us whether it works.' Then go straight into the "
-             "live demo - you drive, Akshay narrates the algorithm.")
+    tf = textbox(s, MARGIN, H - Inches(0.6), W - MARGIN * 2, Inches(0.4))
+    para(tf, "No dataset, no network, no hardware  ·  github.com/Hyperval/maze-runner",
+         10.5, DIM, font=MONO, first=True)
 
+    notes(s, "AKHIL presents the top half (this is your work), ABDULLAH the "
+             "bottom strip. AKHIL - 45 seconds: the maze is carved at runtime "
+             "by a recursive backtracker, which is depth-first search used to "
+             "dig instead of to search. Key detail: carving TWO cells at a "
+             "time, so walls land on even coordinates and stay one cell thick "
+             "- one at a time and the grid dissolves into an open room. Then "
+             "braiding: a finished maze is 'perfect', one route between any "
+             "two cells, so it is all dead ends and the player gets cornered, "
+             "so we reopen 35 percent. Mention the measured side effect: that "
+             "also widened A*'s advantage from 11 to 26 percent. You can run "
+             "visualise_maze.py live if they want to watch it carve. ABDULLAH "
+             "- 15 seconds on the three boxes; the point is the right-hand "
+             "one, that tooling is ours, written to check our own work.")
 
 def slide_challenges(prs):
     s = blank(prs, INK)
@@ -292,7 +299,6 @@ def slide_challenges(prs):
              "is why. Pause after it and let it land. If asked 'so which is "
              "better': depends on map size and what visiting a cell costs.")
 
-
 def slide_future(prs):
     s = blank(prs, CYAN)
 
@@ -336,7 +342,6 @@ def slide_future(prs):
              "compute a route.' Then close cleanly and STOP: 'That's our project. "
              "Code and documentation are on GitHub. Happy to take questions.'")
 
-
 def main():
     prs = Presentation()
     prs.slide_width, prs.slide_height = W, H
@@ -352,7 +357,6 @@ def main():
     size = os.path.getsize(OUT) / 1024
     print(f"Saved {OUT}  ({size:.0f} KB, {len(prs.slides.__iter__.__self__._sldIdLst)} slides)")
     print("Speaker notes are on every slide — open the Notes pane in PowerPoint.")
-
 
 if __name__ == "__main__":
     main()
