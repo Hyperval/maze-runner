@@ -45,11 +45,18 @@ C_BG = (18, 18, 24)
 C_WALL = (58, 62, 86)
 C_FLOOR = (30, 32, 44)
 C_PLAYER = (86, 204, 242)
-C_ENEMY = (235, 87, 87)
+C_ENEMY = (235, 87, 87)          # Enemy 1: Red (BFS)
+C_ENEMY_2 = (242, 153, 74)        # Enemy 2: Orange (A*)
 C_EXIT = (111, 207, 151)
-C_PATH = (235, 87, 87, 90)      # enemy's chosen path (translucent)
-C_VISITED = (124, 101, 214)     # cells the search expanded
+C_PATH = (235, 87, 87, 90)        # enemy 1 chosen path (translucent)
+C_PATH_2 = (242, 153, 74, 90)     # enemy 2 chosen path (translucent)
+C_VISITED = (124, 101, 214)       # cells BFS search expanded (purple)
+C_VISITED_2 = (45, 156, 219)      # cells A* search expanded (cyan)
 C_TEXT = (230, 230, 240)
 C_TEXT_DIM = (140, 140, 160)
 C_WIN = (111, 207, 151)
 C_LOSE = (235, 87, 87)
+
+# --- Innovation feature toggle (Safety switch) -----------------------------
+TWO_ENEMIES_ENABLED = True
+
