@@ -108,6 +108,23 @@ heuristic has nothing to choose between.
 That is a genuinely good thing to say out loud — it shows a design decision that
 turned out to have a measurable second consequence you didn't plan for.
 
+## Your demo piece: `visualise_maze.py`
+
+```bash
+python visualise_maze.py
+```
+
+Watch the carver tunnel forward, hit a dead end, back up its stack, and tunnel
+off in a new direction. **SPACE** pauses, **R** gives a new maze, **UP/DOWN**
+changes speed, **B** toggles braiding so you can see the extra walls it opens
+in green.
+
+This is the single best thing you can show. If an examiner asks how the maze is
+generated, don't describe it — run this, pause it mid-carve, and point.
+
+Screenshots: `assets/demo_carving.png` (mid-carve), `assets/demo_carved.png`
+(finished, with braided walls in green).
+
 ## `carve_steps()` and the `yield` keyword
 
 ```python

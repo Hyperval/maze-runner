@@ -71,6 +71,7 @@ maze-runner/
 ├── maze.py              Maze generation (incl. step-by-step carving)
 ├── entities.py          Player, Enemy and Coin
 ├── settings.py          All tunable constants
+├── visualise_maze.py    Watch the maze being carved, step by step
 ├── benchmark.py         Measures BFS vs A*, writes assets/benchmark.png
 ├── autoplay.py          Headless bot playthroughs; finds crashes + bad balance
 ├── tools_screenshot.py  Generates the demo screenshots
