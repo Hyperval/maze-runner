@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# generated study guide intermediate
+docs/_studyguide.html
