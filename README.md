@@ -14,10 +14,14 @@ chases them using a basic pathfinding algorithm (BFS or A\*).
 
 The maze is generated at runtime with a recursive-backtracker carver, then
 "braided" to open some dead ends into loops so the player has escape routes.
-The enemy recomputes a route to the player's current cell on every step using
+Each enemy recomputes a route to the player's current cell on every step using
 either BFS or A\*, and walks one cell along it. Both searches expose the cells
 they expanded, which the game draws as a translucent overlay — so the AI's
 reasoning is visible on screen rather than hidden.
+
+From level 4 a **second enemy** joins running the *other* algorithm, so BFS and
+A\* hunt the same player simultaneously and the difference in how much of the
+maze each one searches is visible in a single frame.
 
 ## Tech Stack
 
@@ -48,10 +52,15 @@ python test_pathfinding.py
 | Key | Action |
 |---|---|
 | Arrow keys / WASD | Move |
-| `TAB` | Switch enemy algorithm (BFS ↔ A\*) |
+| `SPACE` | Start / next level / retry |
+| `TAB` | Switch enemy algorithms (BFS ↔ A\*) |
 | `V` | Toggle search visualisation |
-| `R` | Restart, or advance to next level after a win |
+| `P` | Pause |
+| `R` | Restart level |
+| `M` | Back to menu |
 | `ESC` | Quit |
+
+Collect every coin to unlock the exit.
 
 ## Project Structure
 
@@ -59,12 +68,19 @@ python test_pathfinding.py
 maze-runner/
 ├── main.py              Game loop, rendering, input, state machine
 ├── pathfinding.py       BFS, A*, flood-fill distance maps
-├── maze.py              Maze generation and grid helpers
-├── entities.py          Player and Enemy
+├── maze.py              Maze generation (incl. step-by-step carving)
+├── entities.py          Player, Enemy and Coin
 ├── settings.py          All tunable constants
-├── test_pathfinding.py  Headless test suite (87 checks)
-└── assets/              Demo screenshots
+├── benchmark.py         Measures BFS vs A*, writes assets/benchmark.png
+├── autoplay.py          Headless bot playthroughs; finds crashes + bad balance
+├── tools_screenshot.py  Generates the demo screenshots
+├── test_pathfinding.py  Headless test suite (210 checks)
+├── docs/                Per-member guides, code walkthrough, viva prep
+└── assets/              Demo screenshots and the benchmark chart
 ```
+
+**New to the codebase? Read [docs/CODE_WALKTHROUGH.md](docs/CODE_WALKTHROUGH.md)**
+— every file explained in plain language, with the Python concepts you need.
 
 ## How the Enemy Works
 
@@ -87,15 +103,21 @@ instead of spreading evenly.
 
 ### Measured: does A\* actually help?
 
-Averaged over 20 generated mazes, player at start, goal at exit:
+Produced by `benchmark.py`, averaged over **50 generated mazes** per row:
 
-| Braid chance | BFS cells expanded | A\* cells expanded | A\* saving | Avg path |
-|---|---|---|---|---|
-| 0.00 | 167.6 | 152.2 | 9.2% | 124.4 |
-| 0.12 | 180.8 | 151.8 | 16.0% | 114.2 |
-| 0.30 | 221.4 | 161.4 | 27.1% | 84.8 |
-| 0.50 | 226.1 | 150.2 | 33.6% | 68.4 |
-| 0.80 | 260.3 | 166.7 | 36.0% | 62.8 |
+| Braid chance | BFS cells | A\* cells | A\* saving | BFS ms | A\* ms | Avg path |
+|---|---|---|---|---|---|---|
+| 0.00 | 183.5 | 163.9 | 10.7% | 0.141 | 0.216 | 130.2 |
+| 0.12 | 188.0 | 160.8 | 14.5% | 0.145 | 0.212 | 108.5 |
+| 0.35 | 214.1 | 157.9 | 26.2% | 0.169 | 0.219 | 87.5 |
+| 0.50 | 236.1 | 176.0 | 25.5% | 0.212 | 0.279 | 81.2 |
+| 0.80 | 256.3 | 171.9 | 33.0% | 0.250 | 0.302 | 65.5 |
+
+**A\* expands fewer cells but takes more wall-clock time.** That is not a
+contradiction: BFS uses a deque (O(1) per push/pop) while A\* uses a heap
+(O(log n)) and computes a heuristic for every neighbour. At ~650 cells the
+per-cell overhead outweighs the cells saved. On a much larger map, or where
+visiting a cell is expensive, A\* wins decisively.
 
 The interesting result is that **A\*'s advantage depends on how open the maze
 is.** In a tight, perfect maze (braid 0.00) the corridors are so constrained

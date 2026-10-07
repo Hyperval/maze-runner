@@ -2,6 +2,11 @@
 
 The maze is a 2D list, grid[row][col], where 1 is a wall and 0 is floor.
 
+PYTHON NOTE: a "2D list" is a list of lists. grid[3] gives you row 3 (itself a
+list), and grid[3][5] gives you the cell at column 5 of that row. Note the
+order is [row][col], NOT [col][row] — mixing these up is the single most common
+bug in grid code.
+
 We generate it with a recursive backtracker (depth-first carving):
     1. Start at a cell, mark it as floor.
     2. Pick a random unvisited neighbour two cells away.
@@ -31,6 +36,34 @@ def generate(cols=COLS, rows=ROWS, seed=None, braid_chance=BRAID_CHANCE):
     `seed` makes generation reproducible, which is what we use to re-run the
     exact same maze when demoing or debugging.
     `braid_chance` is the fraction of dead ends to open up into loops.
+
+    PYTHON NOTE: `cols=COLS` means "if the caller doesn't pass cols, use COLS".
+    So generate() and generate(cols=41) are both valid calls.
+    """
+    # carve_steps does the real work; we just want the final grid, so we run
+    # the generator to completion and keep the last state.
+    grid = None
+    for grid in carve_steps(cols, rows, seed):
+        pass
+
+    if braid_chance > 0:
+        braid(grid, random.Random(seed), braid_chance)
+
+    return grid
+
+
+def carve_steps(cols=COLS, rows=ROWS, seed=None):
+    """Carve a maze, yielding the grid after every single carve step.
+
+    This exists for the generation visualiser: drawing each yielded grid in
+    turn shows the carver tunnelling through the maze and backtracking out of
+    dead ends.
+
+    PYTHON NOTE: a function containing `yield` is a *generator*. It doesn't run
+    all at once — each `yield` hands a value back to whoever is looping over
+    it, then pauses right there until the next loop iteration. That's how we
+    can watch the maze being built one step at a time without storing every
+    intermediate copy.
     """
     rng = random.Random(seed)
 
@@ -42,9 +75,10 @@ def generate(cols=COLS, rows=ROWS, seed=None, braid_chance=BRAID_CHANCE):
     start = (1, 1)
     grid[start[1]][start[0]] = FLOOR
     stack = [start]
+    yield grid
 
     while stack:
-        col, row = stack[-1]
+        col, row = stack[-1]        # stack[-1] is the last item = "current cell"
 
         # Neighbours are two cells away -- one cell is the wall between us.
         candidates = []
@@ -63,11 +97,7 @@ def generate(cols=COLS, rows=ROWS, seed=None, braid_chance=BRAID_CHANCE):
         grid[(row + nrow) // 2][(col + ncol) // 2] = FLOOR
         grid[nrow][ncol] = FLOOR
         stack.append((ncol, nrow))
-
-    if braid_chance > 0:
-        braid(grid, rng, braid_chance)
-
-    return grid
+        yield grid
 
 
 def braid(grid, rng, chance):

@@ -1,11 +1,16 @@
-"""The player and the enemy.
+"""The player, the enemy, and collectible coins.
 
-Both move on the grid one whole cell at a time rather than by pixels. That
-keeps collision trivial (two things collide when they're on the same cell) and
-means the enemy's pathfinding result maps directly onto its movement.
+Everything moves on the grid one whole cell at a time rather than by pixels.
+That keeps collision trivial (two things collide when they're on the same cell)
+and means the enemy's pathfinding result maps directly onto its movement.
 
 Movement is throttled by a millisecond delay rather than by frame count, so
 the game plays identically regardless of frame rate.
+
+PYTHON NOTE: `class` defines a blueprint; `Player(...)` builds one object from
+it. `__init__` runs once when the object is created and sets up its starting
+values. `self` is that specific object — `self.cell` means "this player's cell",
+so two Enemy objects each keep their own separate position and path.
 """
 
 from maze import is_walkable
@@ -26,6 +31,9 @@ class Player:
 
         Returns True if the player actually moved. Movement is refused while
         the move cooldown is still running, or if the target cell is a wall.
+
+        PYTHON NOTE: the leading underscore in `_last_move` is a convention
+        meaning "internal, don't touch from outside this class".
         """
         if direction == (0, 0):
             return False
@@ -49,13 +57,24 @@ class Enemy:
     so the renderer can draw both. Recomputing on a fixed interval (rather than
     every frame) keeps the cost predictable and is plenty responsive at this
     maze size.
+
+    Each Enemy is independent: giving one algorithm="BFS" and another
+    algorithm="A*" lets both hunt the same player simultaneously, which is
+    exactly the side-by-side comparison we want to demo.
     """
 
-    def __init__(self, cell, move_delay, algorithm="BFS", repath_interval=1):
+    def __init__(self, cell, move_delay, algorithm="BFS", repath_interval=1,
+                 colour=None, path_colour=None, visited_colour=None):
         self.cell = cell
         self.move_delay = move_delay
         self.algorithm = algorithm
         self.repath_interval = repath_interval
+
+        # Each enemy carries its own colours so the renderer stays simple —
+        # it just asks the enemy what colour to draw it.
+        self.colour = colour
+        self.path_colour = path_colour
+        self.visited_colour = visited_colour
 
         self._last_move = 0
         self._steps_since_repath = repath_interval   # force a path on step one
@@ -91,3 +110,15 @@ class Enemy:
 
     def caught(self, player_cell):
         return self.cell == player_cell
+
+
+class Coin:
+    """A pickup the player must collect before the exit unlocks.
+
+    Deliberately tiny — it only needs to know where it is. Collection is just
+    an equality check against the player's cell, the same test the enemy uses
+    for catching the player.
+    """
+
+    def __init__(self, cell):
+        self.cell = cell

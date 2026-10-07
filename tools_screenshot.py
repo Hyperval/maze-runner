@@ -1,27 +1,77 @@
-import os, sys
-os.environ["SDL_VIDEODRIVER"]="dummy"
-sys.path.insert(0, r"C:\Users\akhil\maze-runner")
-import pygame, random
-from main import Game, PLAYING, WON, LOST
+"""Capture demo screenshots without opening a window.
 
-random.seed(7)
-g = Game()
-out = r"C:\Users\akhil\maze-runner\assets"
+Run with:  python tools_screenshot.py
 
-# Put the player mid-maze so the chase is in progress.
-import maze as M
-cells = M.floor_cells(g.grid)
-g.player.cell = cells[len(cells)//2]
+Writes PNGs into assets/ for the README, the slides and the submission's
+"sample output" requirement. Using the dummy video driver means this works
+over SSH, in CI, or on a machine with no display.
+"""
 
-for algo in ("BFS","A*"):
-    g.enemy.algorithm = algo
-    g.enemy.recompute_path(g.grid, g.player.cell)
-    g.elapsed = 12.4
-    g.draw()
-    pygame.image.save(g.screen, os.path.join(out, f"demo_{algo.replace('*','star')}.png"))
-    print(f"{algo:3s} expanded {g.enemy.last_search_size:3d}  path {len(g.enemy.path):3d}")
+import os
+import random
+import sys
 
-# Win banner
-g.player.cell = g.exit_cell; g.state = WON; g.draw()
-pygame.image.save(g.screen, os.path.join(out,"demo_win.png"))
-print("saved 3 frames")
+os.environ["SDL_VIDEODRIVER"] = "dummy"      # must precede the pygame import
+
+import pygame  # noqa: E402
+
+import maze  # noqa: E402
+from main import LOST, MENU, PLAYING, WON, Game  # noqa: E402
+
+OUT = "assets"
+
+
+def save(game, name):
+    game.draw()
+    path = os.path.join(OUT, name)
+    pygame.image.save(game.screen, path)
+    print(f"  {path}")
+
+
+def main():
+    random.seed(7)
+    os.makedirs(OUT, exist_ok=True)
+    game = Game()
+
+    print("Writing screenshots:")
+
+    # 1. Title screen
+    game.state = MENU
+    save(game, "demo_menu.png")
+
+    # 2 & 3. A chase in progress, same position under each algorithm.
+    game.level = 5                 # level 5 has two enemies and more coins
+    game.new_level()
+    cells = maze.floor_cells(game.grid)
+    game.player.cell = cells[len(cells) // 2]
+    game.elapsed = 12.4
+
+    for label in ("BFS", "A*"):
+        # Put the FIRST enemy on the algorithm we're showcasing.
+        game.enemies[0].algorithm = label
+        for enemy in game.enemies:
+            enemy.recompute_path(game.grid, game.player.cell)
+        counts = ", ".join(
+            f"{e.algorithm} expanded {e.last_search_size}" for e in game.enemies
+        )
+        print(f"    [{label}] {counts}")
+        save(game, f"demo_{label.replace('*', 'star')}.png")
+
+    # 4. Win screen
+    game.coins = []
+    game.player.cell = game.exit_cell
+    game.state = WON
+    save(game, "demo_win.png")
+
+    # 5. Lose screen
+    game.new_level()
+    game.player.cell = game.enemies[0].cell
+    game.state = LOST
+    save(game, "demo_lose.png")
+
+    pygame.quit()
+    print("Done.")
+
+
+if __name__ == "__main__":
+    main()
