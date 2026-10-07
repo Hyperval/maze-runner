@@ -108,6 +108,26 @@ sealed[5][5] = maze.FLOOR
 p, _ = bfs(sealed, (1, 1), (5, 5))
 check("unreachable goal returns empty path", p == [])
 
+print("\nMember A's from-scratch BFS (scratch_bfs.py)")
+# Member A rebuilt BFS from memory to prove they can explain it under
+# questioning. This keeps that implementation honest: it must agree with the
+# reference implementation on every maze, or one of the two is wrong.
+try:
+    from scratch_bfs import my_bfs
+
+    for seed in range(8):
+        g = maze.generate(seed=seed)
+        g_cols, g_rows = len(g[0]), len(g)
+        s_cell, t_cell = (1, 1), (g_cols - 2, g_rows - 2)
+        mine, _ = my_bfs(g, s_cell, t_cell)
+        ref, _ = bfs(g, s_cell, t_cell)
+        check(f"seed {seed}: scratch BFS finds the same shortest length",
+              len(mine) == len(ref), f"{len(mine)} vs {len(ref)}")
+        check(f"seed {seed}: scratch BFS path is legal",
+              path_is_legal(g, mine, s_cell, t_cell))
+except ImportError:
+    print("  (scratch_bfs.py not present -- skipped)")
+
 print("\nBalance invariants")
 check("enemy is never faster than the player",
       ENEMY_MIN_DELAY > PLAYER_MOVE_DELAY,
