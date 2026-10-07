@@ -138,6 +138,48 @@ each `yield` hands a value to whoever is looping over it and freezes there until
 the next iteration asks for more. That's what lets us draw the maze being carved
 one step at a time without storing hundreds of copies.
 
+## Your second feature: the predictive enemy (`PredictiveEnemy` in entities.py)
+
+An ordinary enemy paths to the cell the player is standing on, so by the time
+it arrives they have moved. It is permanently one step behind and can only win
+by being faster. Yours asks a different question: **where will they be, and can
+I get there first?**
+
+**Stage 1 — `predict_route()`.** Walk forward from the player along their
+heading. Keep going while the way ahead is open. When it is blocked, look at the
+other exits: exactly one way on is a forced corridor bend, so follow it, because
+the player has no other option either. Two or more is a junction — **stop**. We
+cannot know which way they will turn and guessing is worse than not guessing.
+
+**Stage 2 — `choose_target()`.** The player reaches `route[i]` after roughly
+`i × player_delay` milliseconds. We reach it after `our_distance × our_delay`.
+Walking the route backwards from the far end, take the **deepest** cell where we
+arrive no later than they do — deepest because a cut-off further along is harder
+to escape. Nothing qualifies? Interception is off, chase normally.
+
+### The measurements that matter
+
+| | |
+|---|---|
+| Interception rate within 20 cells | 23–32% |
+| Beyond ~30 cells | Essentially never — the lookahead bounds the commitment |
+| Cost per step | ~721 cells vs BFS's 328, about 2.2× |
+| As a third enemy | Broke the game: L6–10 fell to 6–14% win rate |
+| As a replacement for enemy 2 | L6–10 hold at 22–38% |
+
+### Two bugs you found building it
+
+**The freeze.** When the enemy was already standing on its own intercept cell,
+the path had length 1, `update()` returned early without moving, and because the
+repath counter had just been reset it never re-planned — frozen for the rest of
+the level. Both `Enemy` and `PredictiveEnemy` now force a replan on the next
+tick. The base class had the same latent bug, it just almost never triggered.
+
+**The dishonest HUD.** It reported only the path search, so the predictive enemy
+showed 8 cells against BFS's 401 while quietly running a whole-maze flood fill.
+It now reports the total. Worth volunteering if anyone asks about cost — "we
+caught ourselves under-reporting it" lands well.
+
 ## The balance constants you tuned
 
 | Constant | Value | Effect |
@@ -188,23 +230,52 @@ don't, you'll run out of time for the demo.
 If they ask what you personally built, one line: *"I built the maze generation
 and tuned the difficulty."*
 
-## Slide 5 — Future Scope (target: 40 seconds)
+## Slide 5 — "An enemy that cuts you off" (target: 60 seconds)
 
-**Pick ONE item and talk about it properly**, rather than reading all four.
+**This slide is your feature.** It used to be a future-scope list; you built the
+headline item, so the slide now shows it working. Take the full minute.
 
-Best choice is the **predictive enemy**, because it names a real limitation of
-what we built:
+**Open with the contrast:**
+> The other two enemies path to where the player *is*, so they always trail —
+> they can only win by being faster. This one asks where you're going to *be*.
 
-> Right now the enemy always paths to where the player *is*, so it trails you.
-> With more time we'd have it path to where you're *heading*, so it could cut you
-> off at a junction instead of following. That's a different problem — you have
-> to predict intent, not just compute a route.
+**Stage 1, and this is the interesting part:**
+> It walks forward from the player along the direction they're moving, following
+> corridor bends where there's only one way on. At a junction it *stops* — it
+> genuinely can't know which way you'll turn, and guessing there is worse than
+> not guessing. So the prediction is honest about where its knowledge runs out.
 
-Then close:
+**Stage 2:**
+> Then one flood fill gives it the walking distance to every cell, and it takes
+> the deepest cell on your predicted route that it can reach no later than you.
+> That's the yellow box on screen. If it can't beat you anywhere, interception
+> is off and it just chases.
+
+**The trade-off — say this before they ask:**
+> It isn't free. It costs about 721 cells of thinking per step against BFS's
+> 328, roughly 2.2 times as much, because of the extra flood fill.
+
+**Then close:**
 > That's our project. The code and documentation are on GitHub. Happy to take
 > questions.
 
 **Don't trail off.** Finish on a clear sentence and stop talking.
+
+### Follow-ups you will get on this slide
+
+- *"How often does it actually intercept?"* — 23–32% of the time when it's
+  within 20 cells of the player, and essentially never beyond about 30, because
+  the lookahead bounds how far ahead it can commit.
+- *"Why not look further ahead?"* — we raised it from 14 to 22 cells after
+  measuring that at 14 the parameter was the binding limit 51% of the time
+  rather than the maze's junctions. Past that, routes end at junctions anyway.
+- *"Is it just a better enemy?"* — no, and we measured that too. Added as a
+  *third* enemy it broke the game, levels 6–10 fell to 6–14% win rate. It
+  replaces the second enemy instead, so the threat count stays at two and the
+  progression is "the second enemy gets smarter", not "more enemies".
+- *"Does it ever get it wrong?"* — constantly, and that's the point. Every time
+  the player turns off the predicted route the intercept is wasted. That's what
+  it pays for the ability with.
 
 ## During the rest of the presentation
 

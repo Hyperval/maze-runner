@@ -32,6 +32,8 @@ CYAN = RGBColor(0x56, 0xCC, 0xF2)        # player / accent
 PURPLE = RGBColor(0x7C, 0x65, 0xD6)      # BFS
 ORANGE = RGBColor(0xF2, 0x99, 0x4A)      # A*
 GREEN = RGBColor(0x2D, 0x9D, 0x78)
+PREDICT = RGBColor(0x9B, 0x59, 0xB6)     # predictive enemy
+AIM = RGBColor(0xFF, 0xD6, 0x66)         # its intercept marker
 RED = RGBColor(0xEB, 0x57, 0x57)
 CYAN_DARK = RGBColor(0x15, 0x50, 0x6B)
 CYAN_PALE = RGBColor(0xEA, 0xF8, 0xFE)
@@ -294,47 +296,65 @@ def slide_challenges(prs):
 
 
 def slide_future(prs):
-    s = blank(prs, CYAN)
+    s = blank(prs, INK)
 
-    tf = textbox(s, MARGIN, Inches(0.75), W - MARGIN * 2, Inches(1.5))
-    para(tf, "FUTURE SCOPE", 13, CYAN_DARK, font=MONO, first=True, space_after=9)
-    para(tf, "What we would build next", 40, INK, bold=True)
+    tf = textbox(s, MARGIN, Inches(0.62), W - MARGIN * 2, Inches(1.4))
+    para(tf, "BEYOND THE BRIEF", 13, PREDICT, font=MONO, first=True, space_after=9)
+    para(tf, "An enemy that cuts you off", 38, PAPER, bold=True)
 
-    items = [
-        ("A predictive enemy",
-         "Right now it chases where you are. An enemy that paths to where you are "
-         "heading could cut you off at a junction instead of trailing you."),
-        ("Dijkstra with terrain",
-         "Mud cells costing 3 steps instead of 1, to show why BFS is really "
-         "Dijkstra with every edge weighted the same."),
-        ("A better heuristic",
-         "Manhattan distance is weak in a twisty maze. One that accounts for walls "
-         "would widen A*'s lead — if it can be computed cheaply enough to pay for itself."),
-        ("Fog of war",
-         "Limit the player's vision radius, so the maze has to be learned rather "
-         "than read off the screen in one glance."),
-    ]
-    gap = Inches(0.22)
-    cw = (W - MARGIN * 2 - gap * 3) / 4
-    for i, (title, text) in enumerate(items):
-        x = MARGIN + i * (cw + gap)
-        card(s, x, Inches(2.75), cw, Inches(2.5), fill=CYAN_PALE, edge=CYAN_EDGE)
-        tf = textbox(s, x + Inches(0.28), Inches(3.0), cw - Inches(0.56), Inches(2.1))
-        para(tf, title, 15, INK, bold=True, first=True, space_after=7)
-        para(tf, text, 12, RGBColor(0x2C, 0x3A, 0x44), line=1.3)
+    img = "assets/demo_intercept.png"
+    if os.path.exists(img):
+        s.shapes.add_picture(img, MARGIN, Inches(2.25), width=Inches(6.6))
 
-    tf = textbox(s, MARGIN, Inches(5.85), W - MARGIN * 2, Inches(0.6))
-    para(tf, "github.com/Hyperval/maze-runner", 16, INK, font=MONO,
-         bold=True, first=True, space_after=6)
-    para(tf, "Thank you — questions welcome.", 16, CYAN_DARK)
+    x = MARGIN + Inches(6.95)
+    cw = W - x - MARGIN
 
-    notes(s, "AKHIL — 40 seconds. Pick ONE item, don't read all four. Best is the "
-             "predictive enemy, because it names a real limitation: the enemy "
-             "always trails, it never intercepts. 'With more time we'd have it "
-             "path to where you're heading, so it could cut you off at a junction. "
-             "That's a different problem - you have to predict intent, not just "
-             "compute a route.' Then close cleanly and STOP: 'That's our project. "
-             "Code and documentation are on GitHub. Happy to take questions.'")
+    tf = textbox(s, x, Inches(2.25), cw, Inches(0.9))
+    para(tf, "The other enemies path to where you ARE, so they always trail. "
+             "This one asks where you will BE.", 14, BODY, first=True, line=1.3)
+
+    for i, (title, colour, text) in enumerate([
+        ("1 — Predict the route", PREDICT,
+         "Walk forward along your heading, following forced corridor bends. At a "
+         "junction it STOPS — it cannot know which way you will turn, and "
+         "guessing is worse than not guessing."),
+        ("2 — Find the cut-off", AIM,
+         "One flood fill gives its distance to every cell. It takes the deepest "
+         "cell on your route it can reach no later than you — the yellow box."),
+    ]):
+        y = Inches(3.35) + i * Inches(1.6)
+        card(s, x, y, cw, Inches(1.42))
+        bar = s.shapes.add_shape(1, x, y, Inches(0.055), Inches(1.42))
+        bar.fill.solid()
+        bar.fill.fore_color.rgb = colour
+        bar.line.fill.background()
+        bar.shadow.inherit = False
+        tf = textbox(s, x + Inches(0.28), y + Inches(0.18), cw - Inches(0.56), Inches(1.1))
+        para(tf, title, 14.5, colour, bold=True, first=True, space_after=5)
+        para(tf, text, 11.5, BODY, line=1.25)
+
+    tf = textbox(s, x, Inches(6.5), cw, Inches(0.5))
+    para(tf, "Costs ~721 cells of thinking per step against BFS's 328. "
+             "It pays for the ability.", 11, DIM, first=True, line=1.25)
+
+    tf = textbox(s, MARGIN, H - Inches(0.72), W - MARGIN * 2, Inches(0.45))
+    para(tf, "Still ahead: enemies that cooperate to pincer  ·  Dijkstra with "
+             "weighted terrain  ·  fog of war        github.com/Hyperval/maze-runner",
+         10.5, DIM, first=True)
+
+    notes(s, "AKHIL - 60 seconds. This is YOUR feature, so take it properly. "
+             "The other enemies path to where the player IS, so they always "
+             "trail. This one predicts where you're going and gets there first. "
+             "Stage one: it walks forward along your heading and STOPS at "
+             "junctions - that honesty is the interesting bit, it refuses to "
+             "guess where it cannot know. Stage two: one flood fill, then the "
+             "deepest cell on that route it can reach before you - the yellow "
+             "box. Then the trade-off: ~721 cells of thinking per step against "
+             "BFS's 328, so it pays for the ability. If asked how often it "
+             "works: 23-32% within 20 cells, never beyond about 30, because the "
+             "lookahead bounds how far ahead it can commit. Close: 'That's our "
+             "project. Code and documentation are on GitHub. Happy to take "
+             "questions.'")
 
 
 def main():
