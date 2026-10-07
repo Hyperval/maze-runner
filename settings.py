@@ -66,27 +66,11 @@ SECOND_ENEMY_FROM_LEVEL = 4
 # speed doubled the threat overnight -- autoplay showed win rates falling from
 # ~50% at level 3 to 7-20% from level 4 on, the exact level it joins. As a
 # slower flanker it adds pressure without ending the run outright.
-SECOND_ENEMY_DELAY_FACTOR = 1.65
+SECOND_ENEMY_DELAY_FACTOR = 1.45
 
 # Set False to disable the second enemy entirely — a safety switch for the
 # live demo. If anything misbehaves, flip this and the game still works.
 SECOND_ENEMY_ENABLED = True
-
-# --- Predictive enemy (Member B) -------------------------------------------
-# A normal enemy paths to where the player IS, so it always trails. A
-# predictive enemy paths to where the player is GOING, so it can cut them off.
-# It joins at this level; set to 0 to disable it entirely.
-PREDICTIVE_FROM_LEVEL = 6
-
-# How far ahead along the player's route we are willing to aim, in cells.
-# Longer lets the enemy commit to a deeper intercept, but a maze gives it more
-# chances to be wrong, because the player can turn off at any junction.
-PREDICT_LOOKAHEAD = 22
-
-# The predictive enemy moves this much slower than a normal one. Interception
-# is a real advantage, so it pays for it in speed - otherwise it is simply a
-# better enemy rather than a different one.
-PREDICTIVE_DELAY_FACTOR = 1.25
 
 # --- Collectibles ----------------------------------------------------------
 # Coins force the player to cross the maze instead of beelining for the exit,
@@ -117,10 +101,6 @@ C_FLOOR = (30, 32, 44)
 C_PLAYER = (86, 204, 242)
 C_ENEMY = (235, 87, 87)         # enemy 1 (BFS by default)
 C_ENEMY_2 = (242, 153, 74)      # enemy 2 (A* by default)
-C_ENEMY_P = (155, 89, 182)      # predictive enemy
-C_PATH_P = (155, 89, 182, 90)   # its chosen path
-C_VISITED_P = (155, 89, 182)    # cells its search expanded
-C_AIM = (255, 214, 102)         # the cell it is aiming to intercept at
 C_EXIT = (111, 207, 151)
 C_EXIT_LOCKED = (90, 95, 120)   # exit before all coins are collected
 C_COIN = (242, 201, 76)

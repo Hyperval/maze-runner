@@ -180,66 +180,6 @@ for level in range(1, 11):
         check(f"L{level}: the two enemies start apart",
               game.enemies[0].cell != game.enemies[1].cell)
 
-print("\nPredictive enemy (Member B)")
-from entities import PredictiveEnemy  # noqa: E402
-from settings import PREDICT_LOOKAHEAD, PREDICTIVE_FROM_LEVEL  # noqa: E402
-
-game.level = PREDICTIVE_FROM_LEVEL
-game.new_level()
-preds = [e for e in game.enemies if isinstance(e, PredictiveEnemy)]
-check(f"a predictive enemy appears at level {PREDICTIVE_FROM_LEVEL}", len(preds) == 1,
-      f"got {len(preds)}")
-# It REPLACES the second enemy rather than joining it. As a third enemy,
-# autoplay measured levels 6-10 collapsing to 6-14% win rate.
-check("it replaces the second enemy rather than adding a third",
-      len(game.enemies) == 2, f"got {len(game.enemies)} enemies")
-
-game.level = PREDICTIVE_FROM_LEVEL - 1
-game.new_level()
-check(f"no predictive enemy below level {PREDICTIVE_FROM_LEVEL}",
-      not any(isinstance(e, PredictiveEnemy) for e in game.enemies))
-
-game.level = PREDICTIVE_FROM_LEVEL
-game.new_level()
-pred = [e for e in game.enemies if isinstance(e, PredictiveEnemy)][0]
-
-check("standing still predicts no route",
-      pred.predict_route(game.grid, (1, 1), (0, 0)) == [(1, 1)])
-
-bad_route = bad_len = 0
-for cell in maze.floor_cells(game.grid)[:200]:
-    for d in ((0, -1), (1, 0), (0, 1), (-1, 0)):
-        if not maze.is_walkable(game.grid, (cell[0] + d[0], cell[1] + d[1])):
-            continue
-        route = pred.predict_route(game.grid, cell, d)
-        if route[0] != cell:
-            bad_route += 1
-        for a, b in zip(route, route[1:]):
-            if abs(a[0] - b[0]) + abs(a[1] - b[1]) != 1 or not maze.is_walkable(game.grid, b):
-                bad_route += 1
-        if len(route) > PREDICT_LOOKAHEAD + 1:
-            bad_len += 1
-check("predicted routes are contiguous and never cross a wall", bad_route == 0,
-      f"{bad_route} bad routes")
-check("predicted routes respect the lookahead limit", bad_len == 0,
-      f"{bad_len} too long")
-
-# When it commits to an intercept, the aim must lie on the route it predicted,
-# and must not simply be the player's current cell (that would be trailing).
-start = game.player.cell
-heads = [d for d in ((0, -1), (1, 0), (0, 1), (-1, 0))
-         if maze.is_walkable(game.grid, (start[0] + d[0], start[1] + d[1]))]
-if heads:
-    pred.choose_target(game.grid, start, heads[0])
-    if pred.intercepting:
-        check("the intercept point lies on the predicted route",
-              pred.aim_cell in pred.predicted_route)
-        check("intercepting means aiming ahead, not at the player",
-              pred.aim_cell != start)
-    else:
-        check("when it cannot intercept it falls back to chasing the player",
-              pred.aim_cell == start)
-
 print("\nPlayer movement")
 game.level = 1
 game.new_level()

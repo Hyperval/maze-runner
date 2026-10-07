@@ -240,49 +240,6 @@ feature, and it needed no new pathfinding code at all.
 
 ---
 
-### `PredictiveEnemy` — intercepting instead of trailing
-
-A normal `Enemy` paths to the cell the player is standing on. By the time it
-arrives they have moved, so it is permanently one step behind and can only win
-by being faster. `PredictiveEnemy` asks where they will **be**.
-
-**Stage 1, `predict_route()`.** Walk forward from the player along their
-heading. When the way ahead is blocked, count the other exits:
-
-- exactly one way on → a forced corridor bend, follow it; the player has no
-  other option either
-- two or more → a junction, **stop**
-
-Stopping is the interesting decision. At a junction we genuinely cannot know
-which way they will turn, and a wrong guess sends the enemy somewhere useless.
-The prediction is deliberately honest about where its knowledge runs out.
-
-**Stage 2, `choose_target()`.** The player reaches `route[i]` after roughly
-`i × player_delay` ms; we reach it after `our_distance × our_delay`. One flood
-fill gives our distance to every cell. Walking the route backwards from the far
-end, take the **deepest** cell where we arrive no later than they do — deepest
-because a cut-off further along their route is harder to escape. Nothing
-qualifies? Fall back to chasing, like any other enemy.
-
-**Measured.** It intercepts 23–32% of the time within 20 cells, and essentially
-never beyond ~30 — the lookahead bounds how far ahead it can commit. It costs
-~721 cells of thinking per step against BFS's 328, about 2.2×, because of that
-extra flood fill.
-
-**Two bugs this feature produced, both worth knowing:**
-
-1. *The freeze.* When the enemy was already standing on its intercept cell, the
-   path had length 1, `update()` returned early without moving, and the repath
-   counter had just been reset — so it never re-planned and sat frozen for the
-   rest of the level. Both classes now force a replan on the next tick. The base
-   `Enemy` had the same latent bug; it just almost never triggered, because its
-   target (the player) is always moving.
-
-2. *The dishonest HUD.* `last_search_size` counted only the path search, so the
-   predictive enemy displayed 8 cells against BFS's 401 while quietly running a
-   whole-maze flood fill. Fixed to report the total. A measurement that flatters
-   your own feature is worse than no measurement.
-
 ## File 5: `main.py` — the game itself
 
 ### The loop

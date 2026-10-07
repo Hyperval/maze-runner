@@ -27,7 +27,6 @@ import traceback
 os.environ["SDL_VIDEODRIVER"] = "dummy"
 
 import maze  # noqa: E402
-from entities import PredictiveEnemy  # noqa: E402
 from pathfinding import bfs  # noqa: E402
 from settings import ENEMY_HEAD_START_MS  # noqa: E402
 
@@ -131,13 +130,7 @@ def play_one(game, level):
         # measured under harsher conditions than a human ever faces.
         if now >= ENEMY_HEAD_START_MS:
             for enemy in game.enemies:
-                if isinstance(enemy, PredictiveEnemy):
-                    # Must pass the heading, or we would be measuring the
-                    # predictive enemy as if it were an ordinary chaser.
-                    enemy.update(game.grid, game.player.cell, now,
-                                 game.player.heading)
-                else:
-                    enemy.update(game.grid, game.player.cell, now)
+                enemy.update(game.grid, game.player.cell, now)
 
         if any(e.caught(game.player.cell) for e in game.enemies):
             return "caught", steps

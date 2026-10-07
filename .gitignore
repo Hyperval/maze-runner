@@ -5,3 +5,5 @@ venv/
 
 # generated study guide intermediate
 docs/_studyguide.html
+
+# recorded demo output (regenerate with tools_record_demo.py)

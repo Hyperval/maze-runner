@@ -23,11 +23,6 @@ From level 4 a **second enemy** joins running the *other* algorithm, so BFS and
 A\* hunt the same player simultaneously and the difference in how much of the
 maze each one searches is visible in a single frame.
 
-From level 6 that second enemy is replaced by a **predictive enemy**. Instead of
-pathing to where the player is, it extrapolates their route along the corridor —
-stopping at junctions, where it cannot know which way they will turn — and
-intercepts at the deepest cell it can reach before they do.
-
 ## Tech Stack
 
 | Component | Choice |
@@ -44,14 +39,6 @@ No external datasets, no network, no hardware.
 ```bash
 pip install -r requirements.txt
 python main.py
-```
-
-**If you get `ModuleNotFoundError: No module named 'pygame'`** you have more
-than one Python installed and the one on your PATH isn't the one pip installed
-into. On Windows, use the launcher instead — it picks the right one:
-
-```bash
-py main.py
 ```
 
 Run the tests (headless, no window opens):
@@ -82,13 +69,13 @@ maze-runner/
 ├── main.py              Game loop, rendering, input, state machine
 ├── pathfinding.py       BFS, A*, flood-fill distance maps
 ├── maze.py              Maze generation (incl. step-by-step carving)
-├── entities.py          Player, Enemy, PredictiveEnemy and Coin
+├── entities.py          Player, Enemy and Coin
 ├── settings.py          All tunable constants
 ├── visualise_maze.py    Watch the maze being carved, step by step
 ├── benchmark.py         Measures BFS vs A*, writes assets/benchmark.png
 ├── autoplay.py          Headless bot playthroughs; finds crashes + bad balance
 ├── tools_screenshot.py  Generates the demo screenshots
-├── test_pathfinding.py  Headless test suite (233 checks)
+├── test_pathfinding.py  Headless test suite (210 checks)
 ├── docs/                Per-member guides, code walkthrough, viva prep
 └── assets/              Demo screenshots and the benchmark chart
 ```
