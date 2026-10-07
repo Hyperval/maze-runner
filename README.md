@@ -53,7 +53,8 @@ python test_pathfinding.py
 |---|---|
 | Arrow keys / WASD | Move |
 | `SPACE` | Start / next level / retry |
-| `TAB` | Switch enemy algorithms (BFS ↔ A\*) |
+| `1` / `2` | Put the enemy on **BFS** / **A\*** directly |
+| `TAB` | Swap the two algorithms |
 | `V` | Toggle search visualisation |
 | `P` | Pause |
 | `R` | Restart level |

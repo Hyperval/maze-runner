@@ -5,7 +5,8 @@ Run with:  python main.py
 Controls
     Arrow keys / WASD   move
     SPACE               start / confirm
-    TAB                 switch the enemies' algorithms (BFS <-> A*)
+    1 / 2               put the enemy on BFS / A* directly
+    TAB                 swap the two algorithms
     V                   toggle the search visualisation
     P                   pause
     R                   restart / next level
@@ -280,6 +281,14 @@ class Game:
                 elif event.key == pygame.K_TAB:
                     self.cycle_algorithm()
 
+                # Explicit keys as well as the toggle. During a live demo you
+                # want to say "press 2 for A*" and land on it with certainty,
+                # rather than toggling and hoping you were on BFS to start.
+                elif event.key in (pygame.K_1, pygame.K_KP1):
+                    self.set_algorithm("BFS")
+                elif event.key in (pygame.K_2, pygame.K_KP2):
+                    self.set_algorithm("A*")
+
                 elif event.key == pygame.K_v:
                     self.show_search = not self.show_search
 
@@ -300,16 +309,25 @@ class Game:
             self.paused_total += now - self.pause_started
             self.state = PLAYING
 
-    def cycle_algorithm(self):
-        """Swap every enemy to the next algorithm, keeping them different."""
-        self.algorithm = self._other_algorithm(self.algorithm)
+    def set_algorithm(self, name):
+        """Put enemy 1 on `name`, and enemy 2 on the other one.
+
+        Keeping the two enemies on different algorithms is the whole point of
+        having two -- if both ran the same search there would be nothing to
+        compare on screen.
+        """
+        if name not in ALGORITHMS:
+            return
+        self.algorithm = name
         for i, enemy in enumerate(self.enemies):
-            # Enemy 0 gets the selected algorithm, enemy 1 gets the other one,
-            # so the pair always demonstrates a contrast.
             enemy.algorithm = (
-                self.algorithm if i == 0 else self._other_algorithm(self.algorithm)
+                name if i == 0 else self._other_algorithm(name)
             )
             enemy.recompute_path(self.grid, self.player.cell)
+
+    def cycle_algorithm(self):
+        """Swap every enemy to the next algorithm, keeping them different."""
+        self.set_algorithm(self._other_algorithm(self.algorithm))
 
     def update(self):
         if self.state != PLAYING:
@@ -496,11 +514,14 @@ class Game:
         parts = [
             f"{e.algorithm}: {e.last_search_size} cells" for e in self.enemies
         ]
-        right = self.font_small.render("   |   ".join(parts), True, C_TEXT_DIM)
-        self.screen.blit(right, (12, 32))
+        # Rendered in full-brightness text, not the dim colour: this line is
+        # what the whole BFS-vs-A* demo asks the audience to look at.
+        right = self.font.render("   |   ".join(parts), True, C_ACCENT)
+        self.screen.blit(right, (12, 30))
 
         hint = self.font_small.render(
-            "TAB algo   V overlay   P pause   R restart   M menu", True, C_TEXT_DIM
+            "1 BFS   2 A*   TAB swap   V overlay   P pause   R restart   M menu",
+            True, C_TEXT_DIM,
         )
         self.screen.blit(hint, (WIDTH - hint.get_width() - 12, 32))
 

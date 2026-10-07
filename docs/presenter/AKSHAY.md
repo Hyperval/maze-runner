@@ -179,7 +179,7 @@ Point at the screenshot. There are two coloured regions on it.
 > find it.
 
 Then, if the live demo is up:
-> You can press TAB mid-chase and watch those counts change in the HUD.
+> You can press 2 for A* mid-chase and watch those counts change in the HUD.
 
 ## The trap question — be ready for it
 

@@ -179,7 +179,7 @@ You built the interface, so you play. **Rehearse this twice before presenting.**
 | 0:00 | Title screen, press SPACE | You |
 | 0:20 | Move around, collect a coin | You: "collect every coin to unlock the exit" |
 | 0:45 | Press V to show the overlay | Akshay takes over narration |
-| 1:15 | Press TAB to switch algorithms | Akshay: the counts in the HUD |
+| 1:15 | Press 2 for A* (or TAB to swap) | Akshay: the counts in the HUD |
 | 1:45 | Reach the exit, win | You: "levels get harder — bigger maze, faster enemy" |
 | 2:15 | Let level 4+ load, show two enemies | Akshay |
 
